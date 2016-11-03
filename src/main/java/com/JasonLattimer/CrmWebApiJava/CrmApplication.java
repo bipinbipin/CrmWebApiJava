@@ -2,6 +2,11 @@ package com.JasonLattimer.CrmWebApiJava;
 
 import com.microsoft.aad.adal4j.AuthenticationContext;
 import com.microsoft.aad.adal4j.AuthenticationResult;
+import org.json.JSONObject;
+
+//import net.minidev.json.JSONValue;
+//import net.minidev.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -15,21 +20,25 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import javax.naming.ServiceUnavailableException;
-import net.minidev.json.JSONObject;
-import net.minidev.json.JSONValue;
+
 
 public class CrmApplication {
-
+    /*
+        <add name="CRMConfig" connectionString="Url=https://astontech.crm.dynamics.com; Username=dan.simmer@astontech.com; Password=Ast0np@ss" />
+        <!--<add name="CRMConfig" connectionString="Url=https://astontechsandbox.crm.dynamics.com; Username=reportsadmin@astontech.com; Password=@@&3p0&t$@@" />-->
+    */
     //This was registered in Azure AD as a WEB APPLICATION AND/OR WEB API
     //Azure Application Client ID
-    private final static String CLIENT_ID = "00000000-0000-0000-0000-000000000000";
+    private final static String CLIENT_ID = "30c0ffab-09b0-4bcf-8bf6-7edf6881648a";
     //CRM URL
-    private final static String RESOURCE = "https://org.crm.dynamics.com";
+    private final static String RESOURCE = "https://astontech.crm.dynamics.com";
     //O365 credentials for authentication w/o login prompt
-    private final static String USERNAME = "administrator@org.onmicrosoft.com";
-    private final static String PASSWORD = "password";
+    private final static String USERNAME = "dan.simmer@astontech.com";
+
+    private final static String PASSWORD = "Ast0np@ss";
+
     //Azure Directory OAUTH 2.0 AUTHORIZATION ENDPOINT
-    private final static String AUTHORITY = "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000";
+    private final static String AUTHORITY = "https://login.windows.net/d5588966-6236-4e1e-a41b-2cef3ffbab62/oauth2/authorize";
 
     public static void main(String args[]) throws Exception {
 
@@ -41,21 +50,53 @@ public class CrmApplication {
             System.out.println("Refresh Token - " + result.getRefreshToken());
             System.out.println("ID Token - " + result.getIdToken());
 
-            String userId = WhoAmI(result.getAccessToken());
-            System.out.println("UserId - " + userId);
-
-            String fullname = FindFullname(result.getAccessToken(), userId);
-            System.out.println("Fullname: " + fullname);
-
-            String accountId = CreateAccount(result.getAccessToken(), "Java Test");
-            System.out.println("Created: " + accountId);
-
-            accountId = UpdateAccount(result.getAccessToken(), accountId);
-            System.out.println("Updated: " + accountId);
-
-            accountId = DeleteAccount(result.getAccessToken(), accountId);
-            System.out.println("Deleted: " + accountId);
+            String aston_name = getEngineer(result.getAccessToken());
+            System.out.println("aston_name - " + aston_name);
+//            String userId = WhoAmI(result.getAccessToken());
+//            System.out.println("UserId - " + userId);
+//
+//            String fullname = FindFullname(result.getAccessToken(), userId);
+//            System.out.println("Fullname: " + fullname);
+//
+//            String accountId = CreateAccount(result.getAccessToken(), "Java Test");
+//            System.out.println("Created: " + accountId);
+//
+//            accountId = UpdateAccount(result.getAccessToken(), accountId);
+//            System.out.println("Updated: " + accountId);
+//
+//            accountId = DeleteAccount(result.getAccessToken(), accountId);
+//            System.out.println("Deleted: " + accountId);
         }
+    }
+
+    private static String getEngineer(String token) throws MalformedURLException, IOException {
+        HttpURLConnection connection = null;
+        //The URL will change in 2016 to include the API version - /api/data/v8.0/WhoAmI
+        URL url = new URL(RESOURCE + "/api/data/v8.0/aston_engineers?$select=aston_name,aston_astonmarketingemail,aston_assigneddid,aston_dob&$filter=contains(aston_name,%20%27Pruden%27)");
+        connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        connection.setRequestProperty("OData-MaxVersion", "4.0");
+        connection.setRequestProperty("OData-Version", "4.0");
+        connection.setRequestProperty("Accept", "application/json");
+        connection.addRequestProperty("Authorization", "Bearer " + token);
+
+        int responseCode = connection.getResponseCode();
+
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(connection.getInputStream()));
+        String inputLine;
+        StringBuffer response = new StringBuffer();
+
+        while ((inputLine = in.readLine()) != null) {
+            response.append(inputLine);
+        }
+        in.close();
+
+//        Object jResponse;
+//        jResponse = JSONValue.parse(response.toString());
+        JSONObject jObject = new JSONObject(response.toString());
+        String aston_name = jObject.getJSONArray("value").getJSONObject(0).get("aston_name").toString();
+        return aston_name;
     }
 
     private static String DeleteAccount(String token, String accountId) throws MalformedURLException, IOException {
@@ -96,7 +137,7 @@ public class CrmApplication {
         connection.connect();
 
         OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
-        out.write(account.toJSONString());
+        out.write(account.toString());
         out.flush();
         out.close();
 
@@ -126,7 +167,7 @@ public class CrmApplication {
 
         BufferedWriter out
                 = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream()));
-        out.write(account.toJSONString());
+        out.write(account.toString());
         out.close();
 
         int responseCode = connection.getResponseCode();
@@ -160,9 +201,9 @@ public class CrmApplication {
         }
         in.close();
 
-        Object jResponse;
-        jResponse = JSONValue.parse(response.toString());
-        JSONObject jObject = (JSONObject) jResponse;
+//        Object jResponse;
+//        jResponse = JSONValue.parse(response.toString());
+        JSONObject jObject = new JSONObject(response.toString());
         String fullname = jObject.get("fullname").toString();
         return fullname;
     }
@@ -190,9 +231,9 @@ public class CrmApplication {
         }
         in.close();
 
-        Object jResponse;
-        jResponse = JSONValue.parse(response.toString());
-        JSONObject jObject = (JSONObject) jResponse;
+//        Object jResponse;
+//        jResponse = JSONValue.parse(response.toString());
+        JSONObject jObject = new JSONObject(response.toString());
         String userId = jObject.get("UserId").toString();
         return userId;
     }
