@@ -52,6 +52,9 @@ public class CrmApplication {
 
             String aston_name = getEngineer(result.getAccessToken());
             System.out.println("aston_name - " + aston_name);
+
+            String productId = CreateProduct(result.getAccessToken(), "TEST");
+            System.out.println(productId);
 //            String userId = WhoAmI(result.getAccessToken());
 //            System.out.println("UserId - " + userId);
 //
@@ -97,6 +100,40 @@ public class CrmApplication {
         JSONObject jObject = new JSONObject(response.toString());
         String aston_name = jObject.getJSONArray("value").getJSONObject(0).get("aston_name").toString();
         return aston_name;
+    }
+
+    private static String CreateProduct(String token, String name) throws MalformedURLException, IOException {
+        JSONObject applicant = new JSONObject();
+        applicant.put("aston_name", name);
+        applicant.put("aston_location", 642190001);
+        applicant.put("aston_practicetechnologygroup", 1);
+
+        HttpURLConnection connection = null;
+        //The URL will change in 2016 to include the API version - /api/data/v8.0/accounts
+        URL url = new URL(RESOURCE + "/api/data/v8.0/aston_applicants");
+        connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("OData-MaxVersion", "4.0");
+        connection.setRequestProperty("OData-Version", "4.0");
+        connection.setRequestProperty("Accept", "application/json");
+        connection.addRequestProperty("Authorization", "Bearer " + token);
+        connection.setUseCaches(false);
+        connection.setRequestProperty("Content-Type", "application/json");
+
+        connection.setDoOutput(true);
+        connection.connect();
+
+        BufferedWriter out
+                = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream()));
+        out.write(applicant.toString());
+        out.close();
+
+        int responseCode = connection.getResponseCode();
+
+        String headerId = connection.getHeaderField("OData-EntityId");
+
+        String accountId = headerId.split("[\\(\\)]")[1];
+        return accountId;
     }
 
     private static String DeleteAccount(String token, String accountId) throws MalformedURLException, IOException {
