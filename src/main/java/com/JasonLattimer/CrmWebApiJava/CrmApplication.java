@@ -30,15 +30,23 @@ public class CrmApplication {
     //This was registered in Azure AD as a WEB APPLICATION AND/OR WEB API
     //Azure Application Client ID
     private final static String CLIENT_ID = "30c0ffab-09b0-4bcf-8bf6-7edf6881648a";
-    //CRM URL
-    private final static String RESOURCE = "https://astontech.crm.dynamics.com";
+
     //O365 credentials for authentication w/o login prompt
     private final static String USERNAME = "dan.simmer@astontech.com";
-
     private final static String PASSWORD = "Ast0np@ss";
 
     //Azure Directory OAUTH 2.0 AUTHORIZATION ENDPOINT
     private final static String AUTHORITY = "https://login.windows.net/d5588966-6236-4e1e-a41b-2cef3ffbab62/oauth2/authorize";
+
+    //CRM URL
+    private final static String RESOURCE = "https://astontech.crm.dynamics.com";
+    private final static String CRM_API_PREFIX = "/api/data/v8.0";
+    private final static String CRM_ENTITY = "/aston_applicant";
+    private final static String CRM_QUERY = "?$select=aston_name,aston_astonmarketingemail,aston_assigneddid,aston_dob&$filter=contains(aston_name,%20%27Pruden%27)";
+    private final static String CRM_URL = RESOURCE + CRM_API_PREFIX + CRM_ENTITY;
+    private final static String CRM_URL_QUERY = RESOURCE + CRM_API_PREFIX + CRM_ENTITY + CRM_QUERY;
+
+
 
     public static void main(String args[]) throws Exception {
 
@@ -53,8 +61,9 @@ public class CrmApplication {
             String aston_name = getEngineer(result.getAccessToken());
             System.out.println("aston_name - " + aston_name);
 
-            String productId = CreateProduct(result.getAccessToken(), "TEST");
-            System.out.println(productId);
+//            String productId = CreateProduct(result.getAccessToken(), "TEST");
+//            System.out.println(productId);
+
 //            String userId = WhoAmI(result.getAccessToken());
 //            System.out.println("UserId - " + userId);
 //
@@ -75,7 +84,7 @@ public class CrmApplication {
     private static String getEngineer(String token) throws MalformedURLException, IOException {
         HttpURLConnection connection = null;
         //The URL will change in 2016 to include the API version - /api/data/v8.0/WhoAmI
-        URL url = new URL(RESOURCE + "/api/data/v8.0/aston_engineers?$select=aston_name,aston_astonmarketingemail,aston_assigneddid,aston_dob&$filter=contains(aston_name,%20%27Pruden%27)");
+        URL url = new URL(CRM_URL);
         connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
         connection.setRequestProperty("OData-MaxVersion", "4.0");
@@ -95,10 +104,9 @@ public class CrmApplication {
         }
         in.close();
 
-//        Object jResponse;
-//        jResponse = JSONValue.parse(response.toString());
         JSONObject jObject = new JSONObject(response.toString());
-        String aston_name = jObject.getJSONArray("value").getJSONObject(0).get("aston_name").toString();
+//        String aston_name = jObject.getJSONArray("value").getJSONObject(0).get("aston_name").toString();
+        String aston_name = jObject.getJSONArray("value").getJSONObject(0).toString();
         return aston_name;
     }
 
